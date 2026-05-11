@@ -1,0 +1,17 @@
+{
+  "name": "时光回响",
+  "short_name": "时光回响",
+  "description": "与过去的自己对话",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#EDEDED",
+  "background_color": "#EDEDED",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏳</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
