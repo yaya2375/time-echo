@@ -64,17 +64,22 @@ export default function UploadPage() {
         persona_id: personaId,
       });
 
-      // 3. Trigger generation
-      await http.post(`/personas/${personaId}/generate`, {
-        feature_vector: store.featureVector,
-        questionnaire: {
-          self_description: data.selfDescription,
-          self_tags: store.selfTags,
-          key_events: data.keyEvents,
-          what_mattered: data.whatMattered,
-          what_changed: data.whatChanged,
-        },
-      });
+      // 3. Trigger generation (non-blocking - fails gracefully if no API key)
+      try {
+        await http.post(`/personas/${personaId}/generate`, {
+          feature_vector: store.featureVector,
+          questionnaire: {
+            self_description: data.selfDescription,
+            self_tags: store.selfTags,
+            key_events: data.keyEvents,
+            what_mattered: data.whatMattered,
+            what_changed: data.whatChanged,
+          },
+        });
+      } catch (genErr: any) {
+        console.warn('Persona generation failed (API key may be missing):', genErr.message);
+        // Continue anyway - persona exists as draft with features
+      }
 
       store.setStep('done');
       store.reset();

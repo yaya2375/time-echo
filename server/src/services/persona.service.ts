@@ -49,14 +49,7 @@ export async function createPersona(userId: string, input: CreatePersonaInput): 
   );
   saveDb();
 
-  return getPersonaById(id);
-}
-
-export function getPersonaById(id: string): Persona | null {
-  const dbPromise = getDb();
-  // This is synchronous usage - getDb is actually async but sql.js Database operations are sync
-  // We need to handle this properly
-  return null; // Will be called after await
+  return getPersonaByIdAsync(id);
 }
 
 export async function getPersonaByIdAsync(id: string): Promise<Persona | null> {
