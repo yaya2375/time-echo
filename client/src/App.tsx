@@ -10,6 +10,7 @@ import CreatePage from './pages/CreatePage';
 import ChatPage from './pages/ChatPage';
 import LibraryPage from './pages/LibraryPage';
 import SettingsPage from './pages/SettingsPage';
+import Timer from './components/shared/Timer';
 import { ROUTES } from './config/routes';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,7 @@ function MainLayout() {
         </div>
         {showTabBar && <TabBar />}
       </div>
+      <Timer />
     </AppShell>
   );
 }
