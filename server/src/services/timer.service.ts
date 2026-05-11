@@ -34,7 +34,21 @@ export async function getTimerStatus(userId: string) {
   let continuousMinutes = 0;
   if (activeSession) {
     const startTime = new Date(activeSession.started_at as string).getTime();
-    continuousMinutes = Math.floor((Date.now() - startTime) / 60000);
+    const durationSec = activeSession.duration_seconds as number;
+    const elapsedMin = Math.floor((Date.now() - startTime) / 60000);
+
+    // Auto-end stale sessions: started >5 min ago but no heartbeat (duration=0)
+    // This handles browser close without cleanup
+    if (elapsedMin > 5 && durationSec === 0) {
+      db.run(
+        "UPDATE usage_sessions SET ended_at = datetime('now'), was_force_ended = 0 WHERE id = ?",
+        [activeSession.id]
+      );
+      saveDb();
+      continuousMinutes = 0;
+    } else {
+      continuousMinutes = elapsedMin;
+    }
   }
 
   // Check cooldown

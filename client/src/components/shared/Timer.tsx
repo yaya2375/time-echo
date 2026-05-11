@@ -2,7 +2,6 @@ import { Clock, AlertTriangle } from 'lucide-react';
 import { useTimer } from '../../hooks/useTimer';
 
 export default function Timer() {
-  return null; // Temporarily disabled for MVP debugging
   const {
     continuousMinutes,
     remainingMinutes,
