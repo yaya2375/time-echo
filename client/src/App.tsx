@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './stores/useAuthStore';
 import AppShell from './components/layout/AppShell';
 import Header from './components/layout/Header';
@@ -40,8 +40,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 function MainLayout() {
   const pathname = useLocation().pathname;
-  const showTabBar = [ROUTES.HOME, ROUTES.CHAT, ROUTES.SETTINGS].includes(pathname) || pathname === '/';
+  const navigate = useNavigate();
+  const tabPages = [ROUTES.HOME, ROUTES.CHAT, ROUTES.SETTINGS, '/'];
+  const showTabBar = tabPages.includes(pathname);
   const showHeader = ![ROUTES.CHAT].includes(pathname);
+  const isSubPage = !tabPages.includes(pathname);
 
   const titles: Record<string, string> = {
     [ROUTES.HOME]: '时光回响',
@@ -51,10 +54,24 @@ function MainLayout() {
     [ROUTES.SETTINGS]: '我的',
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(ROUTES.HOME);
+    }
+  };
+
   return (
     <AppShell noPadding>
       <div className="flex flex-col h-full">
-        {showHeader && <Header title={titles[pathname] || ''} />}
+        {showHeader && (
+          <Header
+            title={titles[pathname] || ''}
+            showBack={isSubPage}
+            onBack={handleBack}
+          />
+        )}
         <div className="flex-1 overflow-hidden">
           <Routes>
             <Route path={ROUTES.HOME} element={<HomePage />} />
