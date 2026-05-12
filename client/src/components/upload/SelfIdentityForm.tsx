@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Plus, X } from 'lucide-react';
 
 interface SelfIdentityFormProps {
   initialValues?: {
@@ -20,7 +21,9 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
   const [selfDescription, setSelfDescription] = useState(initialValues?.selfDescription || '');
   const [whatMattered, setWhatMattered] = useState(initialValues?.whatMattered || '');
   const [whatChanged, setWhatChanged] = useState(initialValues?.whatChanged || '');
-  const [keyEvents, setKeyEvents] = useState(initialValues?.keyEvents?.join('\n') || '');
+  const [events, setEvents] = useState<string[]>(
+    initialValues?.keyEvents?.length ? initialValues.keyEvents : ['']
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +31,24 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
       selfDescription,
       whatMattered,
       whatChanged,
-      keyEvents: keyEvents.split('\n').filter((s) => s.trim()),
+      keyEvents: events.filter((s) => s.trim()),
     });
+  };
+
+  const updateEvent = (index: number, value: string) => {
+    setEvents((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const removeEvent = (index: number) => {
+    setEvents((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addEvent = () => {
+    setEvents((prev) => [...prev, '']);
   };
 
   return (
@@ -79,15 +98,41 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-wechat-text mb-1">
-            印象深刻的事情（每行一个）
+          <label className="block text-xs font-medium text-wechat-text mb-2">
+            印象深刻的事情
           </label>
-          <textarea
-            value={keyEvents}
-            onChange={(e) => setKeyEvents(e.target.value)}
-            placeholder="比如：&#10;毕业旅行&#10;第一次面试&#10;分手那天"
-            className="w-full h-20 px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none outline-none focus:border-wechat-green"
-          />
+          <div className="space-y-2">
+            {events.map((event, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="text-xs text-wechat-text-secondary w-10 shrink-0">
+                  事件{index + 1}
+                </span>
+                <input
+                  type="text"
+                  value={event}
+                  onChange={(e) => updateEvent(index, e.target.value)}
+                  placeholder={`描述第${index + 1}件事...`}
+                  className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green"
+                />
+                {events.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeEvent(index)}
+                    className="shrink-0 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addEvent}
+            className="mt-2 w-full h-10 border border-dashed border-gray-300 rounded-lg text-sm text-wechat-text-secondary flex items-center justify-center gap-1 hover:border-wechat-green hover:text-wechat-green transition-colors"
+          >
+            <Plus size={16} /> 新增事件
+          </button>
         </div>
 
         <button

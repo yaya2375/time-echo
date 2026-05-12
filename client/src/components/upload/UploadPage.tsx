@@ -183,16 +183,25 @@ export default function UploadPage() {
             >
               下一步 <ArrowRight size={16} />
             </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="w-full h-11 bg-gray-200 text-wechat-text rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+            >
+              <ArrowLeft size={16} /> 返回
+            </button>
           </div>
         )}
 
         {store.step === 'upload' && (
           <div className="space-y-4">
-            <button onClick={() => store.setStep('select-period')} className="flex items-center gap-1 text-sm text-wechat-text-secondary">
-              <ArrowLeft size={14} /> 返回
-            </button>
             <FileDropZone onFile={handleFile} disabled={!!store.progress && store.progress.stage !== 'done' && store.progress.stage !== 'error'} />
             {store.progress && <ParseProgress progress={store.progress} />}
+            <button
+              onClick={() => store.setStep('select-period')}
+              className="w-full h-11 bg-gray-200 text-wechat-text rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+            >
+              <ArrowLeft size={16} /> 返回
+            </button>
           </div>
         )}
 
@@ -200,22 +209,34 @@ export default function UploadPage() {
           <div className="space-y-4">
             <DataPreview messages={store.messages} selfFilter={store.selfFilter} />
             {store.featureVector && <FeatureSummary featureVector={store.featureVector} />}
-            <div className="flex gap-3">
-              <button onClick={() => store.setStep('upload')} className="flex-1 h-11 bg-gray-100 rounded-lg text-sm font-medium">
-                重新上传
-              </button>
-              <button onClick={() => store.setStep('identity')} className="flex-1 h-11 bg-wechat-green text-white rounded-lg text-sm font-medium">
-                确认继续
-              </button>
-            </div>
+            <button
+              onClick={() => store.setStep('identity')}
+              className="w-full h-11 bg-wechat-green text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+            >
+              确认继续 <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={() => store.setStep('upload')}
+              className="w-full h-11 bg-gray-200 text-wechat-text rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+            >
+              <ArrowLeft size={16} /> 返回
+            </button>
           </div>
         )}
 
         {store.step === 'identity' && (
-          <SelfIdentityForm
-            onSubmit={handleIdentitySubmit}
-            loading={generating}
-          />
+          <div className="space-y-4">
+            <SelfIdentityForm
+              onSubmit={handleIdentitySubmit}
+              loading={generating}
+            />
+            <button
+              onClick={() => store.setStep('preview')}
+              className="w-full h-11 bg-gray-200 text-wechat-text rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+            >
+              <ArrowLeft size={16} /> 返回
+            </button>
+          </div>
         )}
 
         {store.step === 'generating' && (
