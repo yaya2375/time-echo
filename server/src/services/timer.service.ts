@@ -33,13 +33,16 @@ export async function getTimerStatus(userId: string) {
 
   let continuousMinutes = 0;
   if (activeSession) {
-    const startTime = new Date(activeSession.started_at as string).getTime();
+    const startTime = new Date((activeSession.started_at as string) + 'Z').getTime();
     const durationSec = activeSession.duration_seconds as number;
     const elapsedMin = Math.floor((Date.now() - startTime) / 60000);
 
-    // Auto-end stale sessions: started >5 min ago but no heartbeat (duration=0)
-    // This handles browser close without cleanup
-    if (elapsedMin > 5 && durationSec === 0) {
+    // Auto-end stale sessions: started >5 min ago and heartbeat gap detected
+    // A session is stale if elapsed wall time exceeds reported duration significantly,
+    // meaning heartbeats stopped (browser closed without cleanup).
+    const expectedHeartbeatSec = Math.max(elapsedMin * 60, 30);
+    const isStale = elapsedMin > 5 && durationSec < expectedHeartbeatSec * 0.5;
+    if (isStale) {
       db.run(
         "UPDATE usage_sessions SET ended_at = datetime('now'), was_force_ended = 0 WHERE id = ?",
         [activeSession.id]
@@ -59,7 +62,7 @@ export async function getTimerStatus(userId: string) {
 
   let cooldownUntil: string | null = null;
   if (lastEnded) {
-    const endedAt = new Date(lastEnded.ended_at as string);
+    const endedAt = new Date((lastEnded.ended_at as string) + 'Z');
     const cooldownEnd = new Date(endedAt.getTime() + config.cooldown_hours * 3600000);
     if (cooldownEnd > new Date()) {
       cooldownUntil = cooldownEnd.toISOString();
