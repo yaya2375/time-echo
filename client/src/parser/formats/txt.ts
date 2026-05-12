@@ -1,5 +1,21 @@
 import type { RawMessage, ParseMetadata } from '../types';
 
+const IMG_REGEX = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+
+function extractImage(content: string): { text: string; image?: string } {
+  IMG_REGEX.lastIndex = 0;
+  const match = IMG_REGEX.exec(content);
+  if (match) {
+    const src = match[1];
+    // If it's a data URL, use directly; otherwise note it
+    if (src.startsWith('data:image/')) {
+      return { text: content.replace(IMG_REGEX, '').trim() || '[图片]', image: src };
+    }
+    return { text: content.replace(IMG_REGEX, '').trim() || `[图片: ${src}]`, image: src };
+  }
+  return { text: content };
+}
+
 const PATTERNS = [
   /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.+)$/,
   /^(\d{4}年\d{1,2}月\d{1,2}日\s+\d{2}:\d{2}:\d{2})\s+(.+)$/,
@@ -39,10 +55,12 @@ export function parseTxt(content: string, fileName?: string): { messages: RawMes
     for (const line of lines) {
       const match = pattern.exec(line);
       if (match) {
+        const { text: content, image } = extractImage(match[3]?.trim() || '');
         messages.push({
           timestamp: match[1],
           sender: match[2].trim(),
-          content: match[3]?.trim() || '',
+          content,
+          image,
         });
       }
     }
@@ -51,14 +69,20 @@ export function parseTxt(content: string, fileName?: string): { messages: RawMes
     for (const line of lines) {
       const match = pattern.exec(line);
       if (match) {
-        if (current && current.content) messages.push(current);
+        if (current && current.content) {
+          const { text: content, image } = extractImage(current.content);
+          messages.push({ ...current, content, image });
+        }
         current = { timestamp: match[1], sender: match[2].trim(), content: '' };
       } else if (current && line.trim()) {
         if (current.content) current.content += '\n';
         current.content += line;
       }
     }
-    if (current && current.content) messages.push(current);
+    if (current && current.content) {
+      const { text: content, image } = extractImage(current.content);
+      messages.push({ ...current, content, image });
+    }
   }
 
   const senders = [...new Set(messages.map((m) => m.sender))];
@@ -92,22 +116,30 @@ function parseWithAllPatterns(lines: string[], fileName?: string): { messages: R
       for (const line of lines) {
         const match = pattern.exec(line);
         if (match) {
-          if (current && current.content) messages.push(current);
+          if (current && current.content) {
+            const { text: content, image } = extractImage(current.content);
+            messages.push({ ...current, content, image });
+          }
           current = { timestamp: match[1], sender: match[2].trim(), content: '' };
         } else if (current && line.trim()) {
           if (current.content) current.content += '\n';
           current.content += line;
         }
       }
-      if (current && current.content) messages.push(current);
+      if (current && current.content) {
+        const { text: content, image } = extractImage(current.content);
+        messages.push({ ...current, content, image });
+      }
     } else {
       for (const line of lines) {
         const match = pattern.exec(line);
         if (match) {
+          const { text: content, image } = extractImage(match[3]?.trim() || '');
           messages.push({
             timestamp: match[1],
             sender: match[2].trim(),
-            content: match[3]?.trim() || '',
+            content,
+            image,
           });
         }
       }

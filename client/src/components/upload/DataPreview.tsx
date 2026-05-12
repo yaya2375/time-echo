@@ -44,11 +44,16 @@ export default function DataPreview({ messages, selfFilter }: DataPreviewProps) 
         {/* Sample messages */}
         <div>
           <p className="text-xs text-wechat-text-secondary mb-2">消息示例：</p>
-          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+          <div className="space-y-1.5 max-h-44 overflow-y-auto">
             {selfFilter.selfMessages.slice(0, 5).map((m, i) => (
               <div key={i} className="flex gap-2 text-xs">
                 <span className="text-wechat-text-secondary shrink-0">{m.timestamp?.slice(0, 16) || '-'}</span>
-                <span className="text-wechat-text truncate">{m.content}</span>
+                <div className="min-w-0">
+                  <span className="text-wechat-text truncate block">{m.content}</span>
+                  {m.image && (
+                    <img src={m.image} alt="" className="mt-1 max-w-[120px] max-h-[80px] rounded object-cover" />
+                  )}
+                </div>
               </div>
             ))}
           </div>

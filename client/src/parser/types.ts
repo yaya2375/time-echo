@@ -2,6 +2,7 @@ export interface RawMessage {
   timestamp: string;
   sender: string;
   content: string;
+  image?: string; // data URL of attached image
 }
 
 export interface ParseResult {
