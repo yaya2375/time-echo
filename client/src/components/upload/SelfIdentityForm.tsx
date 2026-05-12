@@ -80,7 +80,7 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
 
         <div>
           <label className="block text-xs font-medium text-wechat-text mb-1">
-            关键事件（每行一个）
+            印象深刻的事情（每行一个）
           </label>
           <textarea
             value={keyEvents}

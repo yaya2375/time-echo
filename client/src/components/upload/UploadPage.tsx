@@ -10,6 +10,7 @@ import SelfIdentityForm from './SelfIdentityForm';
 import FeatureSummary from './FeatureSummary';
 import http from '../../services/http';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import PeriodPicker from '../shared/PeriodPicker';
 
 export default function UploadPage() {
   const navigate = useNavigate();
@@ -161,10 +162,18 @@ export default function UploadPage() {
 
             <div className="bg-white rounded-xl border border-gray-100 p-4">
               <label className="block text-sm font-medium text-wechat-text mb-2">时期范围</label>
-              <div className="flex items-center gap-2">
-                <input type="date" value={store.periodStart} onChange={(e) => store.setPeriod(e.target.value, store.periodEnd)} className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green" />
-                <span className="text-xs text-wechat-text-secondary">至</span>
-                <input type="date" value={store.periodEnd} onChange={(e) => store.setPeriod(store.periodStart, e.target.value)} className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green" />
+              <div className="space-y-2">
+                <PeriodPicker
+                  value={store.periodStart}
+                  onChange={(v) => store.setPeriod(v, store.periodEnd)}
+                />
+                <div className="flex items-center justify-center">
+                  <span className="text-xs text-wechat-text-secondary">至</span>
+                </div>
+                <PeriodPicker
+                  value={store.periodEnd}
+                  onChange={(v) => store.setPeriod(store.periodStart, v)}
+                />
               </div>
             </div>
 
