@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Send, Mic, MicOff } from 'lucide-react';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 
 interface MessageInputProps {
   onSend: (content: string) => void;
@@ -7,36 +8,15 @@ interface MessageInputProps {
   placeholder?: string;
 }
 
-// Web Speech API type declarations
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-}
-
-declare class SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-
-const SpeechRecognitionAPI: typeof SpeechRecognition | undefined =
-  (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
 export default function MessageInput({ onSend, disabled, placeholder }: MessageInputProps) {
   const [text, setText] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setText((prev) => prev + transcript);
+  }, []);
+
+  const { isRecording, interimText, toggleRecording, hasSupport } = useVoiceInput(handleVoiceResult);
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
@@ -61,74 +41,11 @@ export default function MessageInput({ onSend, disabled, placeholder }: MessageI
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   };
 
-  const toggleRecording = useCallback(() => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      return;
-    }
-
-    if (!SpeechRecognitionAPI) return;
-
-    const recognition = new SpeechRecognitionAPI();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'zh-CN';
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          final += result[0].transcript;
-        } else {
-          interim += result[0].transcript;
-        }
-      }
-      if (final) {
-        setText((prev) => prev + final);
-      }
-      // Show interim text via a data attribute trick: append to current text visually
-      if (interim && inputRef.current) {
-        const current = text + final;
-        // We store interim separately to avoid polluting the actual text state
-        inputRef.current.value = current + interim;
-        inputRef.current.style.height = 'auto';
-        inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + 'px';
-      }
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        console.warn('Speech recognition error:', event.error);
-      }
-      setIsRecording(false);
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-      recognitionRef.current = null;
-      // Restore actual text value
-      if (inputRef.current) {
-        inputRef.current.value = text;
-      }
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
-  }, [isRecording, text]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      recognitionRef.current?.abort();
-    };
-  }, []);
+  const displayText = text + interimText;
 
   return (
     <div className="flex items-end gap-2 px-3 py-2 bg-wechat-card border-t border-wechat-divider">
-      {SpeechRecognitionAPI && (
+      {hasSupport && (
         <button
           type="button"
           onClick={toggleRecording}
@@ -145,7 +62,7 @@ export default function MessageInput({ onSend, disabled, placeholder }: MessageI
       )}
       <textarea
         ref={inputRef}
-        value={text}
+        value={displayText}
         onChange={handleInput}
         onKeyDown={handleKeyDown}
         placeholder={isRecording ? '正在聆听...' : placeholder || '说点什么...'}

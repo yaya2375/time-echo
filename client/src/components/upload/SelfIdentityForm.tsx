@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 
 interface SelfIdentityFormProps {
   initialValues?: {
@@ -15,6 +16,89 @@ interface SelfIdentityFormProps {
     keyEvents: string[];
   }) => void;
   loading?: boolean;
+}
+
+function VoiceTextarea({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  className: string;
+}) {
+  const { isRecording, interimText, toggleRecording, hasSupport } = useVoiceInput(
+    (transcript) => onChange(value + transcript)
+  );
+
+  return (
+    <div className="flex items-start gap-2">
+      <textarea
+        value={value + interimText}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={isRecording ? '正在聆听...' : placeholder}
+        className={className}
+      />
+      {hasSupport && (
+        <button
+          type="button"
+          onClick={toggleRecording}
+          className={`shrink-0 mt-1 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+            isRecording
+              ? 'bg-red-500 text-white animate-pulse'
+              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+          }`}
+          title={isRecording ? '点击停止' : '语音输入'}
+        >
+          {isRecording ? '⏹' : '🎤'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function VoiceInput({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  className: string;
+}) {
+  const { isRecording, interimText, toggleRecording, hasSupport } = useVoiceInput(
+    (transcript) => onChange(value + transcript)
+  );
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={value + interimText}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={isRecording ? '正在聆听...' : placeholder}
+        className={className}
+      />
+      {hasSupport && (
+        <button
+          type="button"
+          onClick={toggleRecording}
+          className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+            isRecording
+              ? 'bg-red-500 text-white animate-pulse'
+              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+          }`}
+          title={isRecording ? '点击停止' : '语音输入'}
+        >
+          {isRecording ? '⏹' : '🎤'}
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function SelfIdentityForm({ initialValues, onSubmit, loading }: SelfIdentityFormProps) {
@@ -63,11 +147,11 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
           <label className="block text-xs font-medium text-wechat-text mb-1">
             用几句话描述那个时期的你
           </label>
-          <textarea
+          <VoiceTextarea
             value={selfDescription}
-            onChange={(e) => setSelfDescription(e.target.value)}
+            onChange={setSelfDescription}
             placeholder="比如：大学刚毕业，满腔热血但有点迷茫..."
-            className="w-full h-20 px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none outline-none focus:border-wechat-green"
+            className="flex-1 h-20 px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none outline-none focus:border-wechat-green"
           />
         </div>
 
@@ -75,12 +159,11 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
           <label className="block text-xs font-medium text-wechat-text mb-1">
             那时候的你最在意什么？
           </label>
-          <input
-            type="text"
+          <VoiceInput
             value={whatMattered}
-            onChange={(e) => setWhatMattered(e.target.value)}
+            onChange={setWhatMattered}
             placeholder="比如：朋友、自由、成就感..."
-            className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green"
+            className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green"
           />
         </div>
 
@@ -88,12 +171,11 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
           <label className="block text-xs font-medium text-wechat-text mb-1">
             现在的你觉得那时的自己...
           </label>
-          <input
-            type="text"
+          <VoiceInput
             value={whatChanged}
-            onChange={(e) => setWhatChanged(e.target.value)}
+            onChange={setWhatChanged}
             placeholder="比如：那时候好单纯 / 那时候勇气真大"
-            className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green"
+            className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green"
           />
         </div>
 
@@ -107,10 +189,9 @@ export default function SelfIdentityForm({ initialValues, onSubmit, loading }: S
                 <span className="text-xs text-wechat-text-secondary w-10 shrink-0">
                   事件{index + 1}
                 </span>
-                <input
-                  type="text"
+                <VoiceInput
                   value={event}
-                  onChange={(e) => updateEvent(index, e.target.value)}
+                  onChange={(v) => updateEvent(index, v)}
                   placeholder={`描述第${index + 1}件事...`}
                   className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green"
                 />
