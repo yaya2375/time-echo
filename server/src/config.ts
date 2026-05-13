@@ -11,4 +11,6 @@ export const config = {
   anthropic_max_tokens_chat: parseInt(process.env.ANTHROPIC_MAX_TOKENS_CHAT || '2048', 10),
   usage_limit_minutes: parseInt(process.env.USAGE_LIMIT_MINUTES || '120', 10),
   cooldown_hours: parseInt(process.env.COOLDOWN_HOURS || '8', 10),
+  wechat_appid: process.env.WECHAT_APPID || '',
+  wechat_secret: process.env.WECHAT_SECRET || '',
 };

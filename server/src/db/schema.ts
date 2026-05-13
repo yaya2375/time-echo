@@ -6,13 +6,20 @@ export function initializeDatabase(db: Database): void {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
-      username TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
+      username TEXT NOT NULL DEFAULT '',
+      password_hash TEXT NOT NULL DEFAULT '',
       display_name TEXT NOT NULL DEFAULT '',
+      wechat_openid TEXT DEFAULT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
+  // Migrate: add wechat_openid column to existing databases
+  try {
+    db.run('ALTER TABLE users ADD COLUMN wechat_openid TEXT DEFAULT NULL');
+  } catch { /* column already exists */ }
+  // Create index for WeChat openid lookup
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_wechat_openid ON users(wechat_openid) WHERE wechat_openid IS NOT NULL');
 
   db.run(`
     CREATE TABLE IF NOT EXISTS personas (

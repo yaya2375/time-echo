@@ -106,6 +106,110 @@ authRoutes.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/auth/wechat-login — WeChat Mini Program login
+authRoutes.post('/wechat-login', async (req, res) => {
+  try {
+    const { code, nickname, avatar } = req.body;
+
+    if (!code) {
+      res.status(400).json({ success: false, error: '缺少登录凭证' });
+      return;
+    }
+
+    if (!config.wechat_appid || !config.wechat_secret) {
+      // Dev mode: use code as a mock openid for local testing
+      const db = await getDb();
+      const mockOpenid = `wechat_dev_${code}`;
+      const existing = queryOne(db, 'SELECT * FROM users WHERE wechat_openid = ?', [mockOpenid]);
+      let user;
+      if (existing) {
+        user = existing;
+        if (nickname) {
+          db.run('UPDATE users SET display_name = ? WHERE id = ?', [nickname, user.id]);
+          saveDb();
+        }
+      } else {
+        const id = nanoid();
+        db.run(
+          'INSERT INTO users (id, username, display_name, password_hash, wechat_openid) VALUES (?, ?, ?, ?, ?)',
+          [id, `wx_${code.slice(0, 12)}`, nickname || `微信用户${code.slice(0, 4)}`, '', mockOpenid]
+        );
+        saveDb();
+        user = { id, username: `wx_${code.slice(0, 12)}`, display_name: nickname || `微信用户${code.slice(0, 4)}` };
+      }
+      const token = jwt.sign({ sub: user.id }, config.jwt_secret, { expiresIn: '7d' });
+      res.json({
+        success: true,
+        data: { token, isNewUser: !existing, user: { id: user.id, username: user.username, display_name: user.display_name } },
+      });
+      return;
+    }
+
+    // Production: call WeChat API
+    const wxRes = await fetch('https://api.weixin.qq.com/sns/jscode2session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appid: config.wechat_appid,
+        secret: config.wechat_secret,
+        js_code: code,
+        grant_type: 'authorization_code',
+      }),
+    });
+    const wxData = await wxRes.json() as any;
+
+    if (wxData.errcode) {
+      console.error('[WeChat Login]', wxData);
+      res.status(400).json({ success: false, error: `微信登录失败: ${wxData.errmsg || '未知错误'}` });
+      return;
+    }
+
+    const { openid, session_key, unionid } = wxData;
+
+    // Find or create user by openid
+    const db = await getDb();
+    const existing = queryOne(db, 'SELECT * FROM users WHERE wechat_openid = ?', [openid]);
+    let isNewUser = false;
+    let user;
+
+    if (existing) {
+      user = existing;
+      if (nickname) {
+        db.run('UPDATE users SET display_name = ? WHERE id = ?', [nickname, user.id]);
+        saveDb();
+      }
+    } else {
+      isNewUser = true;
+      const id = nanoid();
+      const generatedUsername = `wx_${openid.slice(0, 12)}`;
+      db.run(
+        'INSERT INTO users (id, username, display_name, password_hash, wechat_openid) VALUES (?, ?, ?, ?, ?)',
+        [id, generatedUsername, nickname || `微信用户`, '', openid]
+      );
+      saveDb();
+      user = { id, username: generatedUsername, display_name: nickname || '微信用户' };
+    }
+
+    const token = jwt.sign({ sub: user.id }, config.jwt_secret, { expiresIn: '7d' });
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        isNewUser,
+        user: {
+          id: user.id as string,
+          username: user.username as string,
+          display_name: user.display_name as string,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('[WeChat Login]', err);
+    res.status(500).json({ success: false, error: '微信登录失败' });
+  }
+});
+
 // GET /api/auth/me
 authRoutes.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   try {
