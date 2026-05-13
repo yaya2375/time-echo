@@ -4,9 +4,15 @@ import type { FeatureVector } from '@time-echo/shared';
 
 export type UploadStep = 'select-period' | 'upload' | 'preview' | 'identity' | 'generating' | 'done';
 
+export interface UploadedFile {
+  name: string;
+  messageCount: number;
+}
+
 interface UploadState {
   step: UploadStep;
-  file: File | null;
+  files: File[];
+  uploadedFiles: UploadedFile[];
   messages: RawMessage[];
   selfFilter: SelfFilterResult | null;
   featureVector: FeatureVector | null;
@@ -21,7 +27,9 @@ interface UploadState {
   whatChanged: string;
 
   setStep: (step: UploadStep) => void;
-  setFile: (file: File | null) => void;
+  addFile: (file: File) => void;
+  removeFile: (index: number) => void;
+  appendMessages: (msgs: RawMessage[], file: UploadedFile) => void;
   setMessages: (messages: RawMessage[]) => void;
   setSelfFilter: (sf: SelfFilterResult | null) => void;
   setFeatureVector: (fv: FeatureVector | null) => void;
@@ -34,16 +42,17 @@ interface UploadState {
 
 const initial = {
   step: 'select-period' as UploadStep,
-  file: null,
-  messages: [],
-  selfFilter: null,
-  featureVector: null,
-  progress: null,
+  files: [] as File[],
+  uploadedFiles: [] as UploadedFile[],
+  messages: [] as RawMessage[],
+  selfFilter: null as SelfFilterResult | null,
+  featureVector: null as FeatureVector | null,
+  progress: null as ParseProgress | null,
   periodStart: '',
   periodEnd: '',
   selfDescription: '',
-  selfTags: [],
-  keyEvents: [],
+  selfTags: [] as string[],
+  keyEvents: [] as string[],
   whatMattered: '',
   whatChanged: '',
 };
@@ -52,7 +61,15 @@ export const useUploadStore = create<UploadState>((set) => ({
   ...initial,
 
   setStep: (step) => set({ step }),
-  setFile: (file) => set({ file }),
+  addFile: (file) => set((s) => ({ files: [...s.files, file] })),
+  removeFile: (index) => set((s) => ({
+    files: s.files.filter((_, i) => i !== index),
+    uploadedFiles: s.uploadedFiles.filter((_, i) => i !== index),
+  })),
+  appendMessages: (msgs, file) => set((s) => ({
+    messages: [...s.messages, ...msgs],
+    uploadedFiles: [...s.uploadedFiles, file],
+  })),
   setMessages: (messages) => set({ messages }),
   setSelfFilter: (selfFilter) => set({ selfFilter }),
   setFeatureVector: (featureVector) => set({ featureVector }),

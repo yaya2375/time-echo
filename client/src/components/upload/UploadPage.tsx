@@ -33,10 +33,7 @@ export default function UploadPage() {
 
   const handleFile = async (file: File) => {
     store.setStep('upload');
-    const result = await processFile(file);
-    if (result) {
-      store.setStep('preview');
-    }
+    await processFile(file);
   };
 
   const handleIdentitySubmit = async (data: {
@@ -194,8 +191,23 @@ export default function UploadPage() {
 
         {store.step === 'upload' && (
           <div className="space-y-4">
-            <FileDropZone onFile={handleFile} disabled={!!store.progress && store.progress.stage !== 'done' && store.progress.stage !== 'error'} />
-            {store.progress && <ParseProgress progress={store.progress} />}
+            <FileDropZone
+              onFile={handleFile}
+              disabled={!!store.progress && store.progress.stage !== 'done' && store.progress.stage !== 'error'}
+              uploadedFiles={store.uploadedFiles}
+              onRemove={(i) => store.removeFile(i)}
+            />
+            {store.progress && store.progress.stage !== 'done' && (
+              <ParseProgress progress={store.progress} />
+            )}
+            {store.uploadedFiles.length > 0 && (
+              <button
+                onClick={() => store.setStep('preview')}
+                className="w-full h-11 bg-wechat-green text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+              >
+                预览全部 ({store.messages.length} 条消息) <ArrowRight size={16} />
+              </button>
+            )}
             <button
               onClick={() => store.setStep('select-period')}
               className="w-full h-11 bg-gray-200 text-wechat-text rounded-lg text-sm font-medium flex items-center justify-center gap-1"

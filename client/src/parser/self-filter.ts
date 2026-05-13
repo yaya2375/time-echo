@@ -26,9 +26,17 @@ export function detectSelf(
 
   const scores: Record<string, number> = {};
 
+  // Self-identifying sender names: these almost always indicate "me"
+  const selfNamePatterns = [/^我$/, /^自己$/, /^本人$/, /^Me$/i, /^Self$/i, /^我自己$/];
+
   for (const sender of senders) {
     let score = 0;
     const msgs = messages.filter((m) => m.sender === sender);
+
+    // 0. Self-identifying name: sender literally named "我" (me) is a dead giveaway
+    if (selfNamePatterns.some((p) => p.test(sender))) {
+      score += 50;
+    }
 
     // 1. Message count weight (normalized)
     score += (msgs.length / messages.length) * 30;
@@ -36,10 +44,9 @@ export function detectSelf(
     // 2. First-person pronoun usage ("我", "我的", "我觉得")
     const text = msgs.map((m) => m.content).join(' ');
     const selfRefs = (text.match(/我/g) || []).length;
-    const youRefs = (text.match(/你/g) || []).length;
     score += Math.min(selfRefs / Math.max(msgs.length, 1) * 20, 20);
 
-    // 3. Message length (self tends to write more or less — give balanced weight)
+    // 3. Message length (self tends to write more — give balanced weight)
     const avgLen = msgs.reduce((s, m) => s + m.content.length, 0) / Math.max(msgs.length, 1);
     score += Math.min(avgLen / 10, 15);
 

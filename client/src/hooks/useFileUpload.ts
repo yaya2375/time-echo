@@ -5,13 +5,13 @@ import { extractFeatures } from '../parser/feature-extractor';
 import type { FeatureVector } from '@time-echo/shared';
 
 export function useFileUpload() {
-  const { setFile, setMessages, setSelfFilter, setFeatureVector, setProgress } = useUploadStore();
+  const { addFile, appendMessages, setSelfFilter, setFeatureVector, setProgress } = useUploadStore();
   const abortRef = useRef(false);
 
   const processFile = useCallback(
     async (file: File) => {
       abortRef.current = false;
-      setFile(file);
+      addFile(file);
 
       try {
         const { result, selfFilter } = await parseChatFile(file, {}, (p) => {
@@ -20,11 +20,17 @@ export function useFileUpload() {
 
         if (abortRef.current) return null;
 
-        setMessages(result.messages);
+        appendMessages(result.messages, {
+          name: file.name,
+          messageCount: result.messages.length,
+        });
         setSelfFilter(selfFilter);
 
-        // Extract features from self messages
-        const fv: FeatureVector = extractFeatures(selfFilter.selfMessages, result.messages);
+        // Re-extract features from all accumulated messages
+        const allMessages = useUploadStore.getState().messages;
+        const prevSelfMsgs = useUploadStore.getState().selfFilter?.selfMessages || [];
+        const allSelfMsgs = [...prevSelfMsgs, ...selfFilter.selfMessages];
+        const fv: FeatureVector = extractFeatures(allSelfMsgs, allMessages);
         setFeatureVector(fv);
 
         setProgress({ stage: 'done', progress: 100, message: '解析完成' });
@@ -34,7 +40,7 @@ export function useFileUpload() {
         return null;
       }
     },
-    [setFile, setMessages, setSelfFilter, setFeatureVector, setProgress]
+    [addFile, appendMessages, setSelfFilter, setFeatureVector, setProgress]
   );
 
   const abort = useCallback(() => {
