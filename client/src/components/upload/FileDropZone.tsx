@@ -42,7 +42,7 @@ export default function FileDropZone({ onFile, disabled }: FileDropZoneProps) {
     >
       <input
         type="file"
-        accept=".txt,.csv,.html,.htm,.json,.jpg,.jpeg,.png,.gif,.webp"
+        accept=".txt,.csv,.html,.htm,.json,.jpg,.jpeg,.png,.gif,.webp,.zip"
         onChange={handleChange}
         className="hidden"
         id="file-input"
@@ -55,7 +55,7 @@ export default function FileDropZone({ onFile, disabled }: FileDropZoneProps) {
           支持 WeChatMsg / 留痕 导出的聊天记录
         </p>
         <p className="text-xs text-wechat-text-secondary mt-1">
-          .txt .csv .html .json .jpg .png
+          .txt .csv .html .json .zip .jpg .png
         </p>
         <div className="mt-3 inline-flex items-center gap-1 text-xs text-wechat-green bg-green-50 px-2 py-1 rounded">
           <FileText size={12} />

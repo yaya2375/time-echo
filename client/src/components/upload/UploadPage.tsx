@@ -155,7 +155,7 @@ export default function UploadPage() {
                 type="text"
                 value={personaName}
                 onChange={(e) => setPersonaName(e.target.value)}
-                placeholder="例如：2023年的我、大学时期的我"
+                placeholder={personaType === 'past_self' ? '例如：2018年的我、大学时期的我或者不同时期的昵称' : '例如：大学时期的她、2020年的他或者你们的专属称呼'}
                 className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-wechat-green"
               />
             </div>
