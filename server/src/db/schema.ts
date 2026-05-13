@@ -18,6 +18,10 @@ export function initializeDatabase(db: Database): void {
   try {
     db.run('ALTER TABLE users ADD COLUMN wechat_openid TEXT DEFAULT NULL');
   } catch { /* column already exists */ }
+  // Migrate: add avatar column
+  try {
+    db.run('ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT NULL');
+  } catch { /* column already exists */ }
   // Create index for WeChat openid lookup
   db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_wechat_openid ON users(wechat_openid) WHERE wechat_openid IS NOT NULL');
 

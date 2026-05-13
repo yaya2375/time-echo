@@ -124,23 +124,28 @@ authRoutes.post('/wechat-login', async (req, res) => {
       let user;
       if (existing) {
         user = existing;
-        if (nickname) {
-          db.run('UPDATE users SET display_name = ? WHERE id = ?', [nickname, user.id]);
+        if (nickname || avatar) {
+          const updates = [];
+          const params = [];
+          if (nickname) { updates.push('display_name = ?'); params.push(nickname); }
+          if (avatar) { updates.push('avatar = ?'); params.push(avatar); }
+          params.push(user.id);
+          db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
           saveDb();
         }
       } else {
         const id = nanoid();
         db.run(
-          'INSERT INTO users (id, username, display_name, password_hash, wechat_openid) VALUES (?, ?, ?, ?, ?)',
-          [id, `wx_${code.slice(0, 12)}`, nickname || `微信用户${code.slice(0, 4)}`, '', mockOpenid]
+          'INSERT INTO users (id, username, display_name, password_hash, wechat_openid, avatar) VALUES (?, ?, ?, ?, ?, ?)',
+          [id, `wx_${code.slice(0, 12)}`, nickname || '微信用户', '', mockOpenid, avatar || null]
         );
         saveDb();
-        user = { id, username: `wx_${code.slice(0, 12)}`, display_name: nickname || `微信用户${code.slice(0, 4)}` };
+        user = { id, username: `wx_${code.slice(0, 12)}`, display_name: nickname || '微信用户', avatar: avatar || null };
       }
       const token = jwt.sign({ sub: user.id }, config.jwt_secret, { expiresIn: '7d' });
       res.json({
         success: true,
-        data: { token, isNewUser: !existing, user: { id: user.id, username: user.username, display_name: user.display_name } },
+        data: { token, isNewUser: !existing, user: { id: user.id, username: user.username, display_name: user.display_name, avatar: user.avatar } },
       });
       return;
     }
@@ -174,8 +179,13 @@ authRoutes.post('/wechat-login', async (req, res) => {
 
     if (existing) {
       user = existing;
-      if (nickname) {
-        db.run('UPDATE users SET display_name = ? WHERE id = ?', [nickname, user.id]);
+      if (nickname || avatar) {
+        const updates = [];
+        const params = [];
+        if (nickname) { updates.push('display_name = ?'); params.push(nickname); }
+        if (avatar) { updates.push('avatar = ?'); params.push(avatar); }
+        params.push(user.id);
+        db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
         saveDb();
       }
     } else {
@@ -183,11 +193,11 @@ authRoutes.post('/wechat-login', async (req, res) => {
       const id = nanoid();
       const generatedUsername = `wx_${openid.slice(0, 12)}`;
       db.run(
-        'INSERT INTO users (id, username, display_name, password_hash, wechat_openid) VALUES (?, ?, ?, ?, ?)',
-        [id, generatedUsername, nickname || `微信用户`, '', openid]
+        'INSERT INTO users (id, username, display_name, password_hash, wechat_openid, avatar) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, generatedUsername, nickname || '微信用户', '', openid, avatar || null]
       );
       saveDb();
-      user = { id, username: generatedUsername, display_name: nickname || '微信用户' };
+      user = { id, username: generatedUsername, display_name: nickname || '微信用户', avatar: avatar || null };
     }
 
     const token = jwt.sign({ sub: user.id }, config.jwt_secret, { expiresIn: '7d' });
@@ -201,6 +211,7 @@ authRoutes.post('/wechat-login', async (req, res) => {
           id: user.id as string,
           username: user.username as string,
           display_name: user.display_name as string,
+          avatar: (user as any).avatar || null,
         },
       },
     });
@@ -210,11 +221,39 @@ authRoutes.post('/wechat-login', async (req, res) => {
   }
 });
 
+// PUT /api/auth/profile — update display name and avatar
+authRoutes.put('/profile', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { display_name, avatar } = req.body;
+    const db = await getDb();
+
+    const updates = [];
+    const params = [];
+    if (display_name !== undefined) { updates.push('display_name = ?'); params.push(display_name); }
+    if (avatar !== undefined) { updates.push('avatar = ?'); params.push(avatar); }
+    if (updates.length === 0) {
+      res.status(400).json({ success: false, error: '没有要更新的内容' });
+      return;
+    }
+    updates.push('updated_at = datetime(\'now\')');
+    params.push(req.userId!);
+
+    db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+    saveDb();
+
+    const user = queryOne(db, 'SELECT id, username, display_name, avatar, created_at FROM users WHERE id = ?', [req.userId!]);
+    res.json({ success: true, data: user });
+  } catch (err) {
+    console.error('[Profile update]', err);
+    res.status(500).json({ success: false, error: '更新失败' });
+  }
+});
+
 // GET /api/auth/me
 authRoutes.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const db = await getDb();
-    const user = queryOne(db, 'SELECT id, username, display_name, created_at FROM users WHERE id = ?', [req.userId!]);
+    const user = queryOne(db, 'SELECT id, username, display_name, avatar, created_at FROM users WHERE id = ?', [req.userId!]);
 
     if (!user) {
       res.status(404).json({ success: false, error: '用户不存在' });
